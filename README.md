@@ -6,6 +6,8 @@ Aplikasi otomatis untuk melakukan pendaftaran mata kuliah (WAR KRS) di SIAKAD IT
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+**📋 [DAFTAR MATA KULIAH LENGKAP](COURSE_LIST.md) - Lihat semua mata kuliah yang tersedia dengan kode dan ID kelas**
+
 ## ✨ Features
 
 - ✅ **Automated Course Registration**: Otomatis mendaftarkan mata kuliah secara berulang sampai berhasil
@@ -47,6 +49,9 @@ pip install -r requirements.txt
 ```
 
 ### 3. Setup Configuration
+
+**📋 Sebelum setup, lihat daftar mata kuliah yang tersedia:**
+**[COURSE_LIST.md](COURSE_LIST.md)** - Daftar lengkap mata kuliah dengan kode dan ID kelas
 
 ```bash
 # Jalankan setup wizard
@@ -162,7 +167,51 @@ TELEGRAM_CHAT_ID=your_chat_id
 }
 ```
 
-## 🔧 Command Line Options
+## � Course Selection Guide
+
+### Mencari Mata Kuliah
+
+1. **Lihat daftar lengkap**: [COURSE_LIST.md](COURSE_LIST.md) berisi semua mata kuliah yang tersedia
+2. **Cari berdasarkan program studi**: Mata kuliah dikelompokkan berdasarkan kode program (IF25, TK25, dll.)
+3. **Catat kode dan class ID**: Format `"KODE_MATA_KULIAH": "CLASS_ID"`
+
+### Format Target Courses
+
+```json
+{
+    "target_courses": {
+        "SD25-41301": "37813",    // Swarm Intelligence - R
+        "IF25-40033": "35998",    // Tugas Akhir - R
+        "TK25-40001": "36847",    // Perancangan Pabrik Kimia - RA
+        "MA25-21302": "37636"     // Teori Graf - R
+    }
+}
+```
+
+### Tips Memilih Mata Kuliah
+
+- ✅ **Cek prasyarat**: Pastikan sudah memenuhi mata kuliah prasyarat
+- ✅ **Perhatikan jadwal**: Hindari bentrok jadwal antar mata kuliah  
+- ✅ **Cek kapasitas kelas**: Beberapa kelas memiliki kapasitas terbatas
+- ✅ **Prioritas tinggi**: Letakkan mata kuliah penting di urutan atas
+
+### Manual Course ID Lookup
+
+Jika mata kuliah tidak ada di daftar:
+
+1. **Login ke SIAKAD ITERA**
+2. **Buka halaman KRS**
+3. **Inspect Element** (F12) pada dropdown mata kuliah
+4. **Cari tag**: `<option value="CLASS_ID">KODE - Nama - Kelas</option>`
+5. **Salin CLASS_ID**: Gunakan value di dalam option tag
+
+**Contoh:**
+```html
+<option value="37813">SD25-41301 - Swarm Intelligence - R</option>
+```
+→ Class ID: `37813`
+
+## �🔧 Command Line Options
 
 ```bash
 # Tampilkan help
@@ -249,6 +298,21 @@ python main.py --status
 ## ⚠️ Disclaimer
 
 Tool ini dibuat untuk tujuan edukasi dan membantu mahasiswa ITERA dalam proses pendaftaran KRS. Gunakan dengan bijak dan ikuti kebijakan yang berlaku di Institut Teknologi Sumatera.
+
+## 🤝 Contributing
+
+Kami menyambut kontribusi dari komunitas! Lihat [CONTRIBUTING.md](CONTRIBUTING.md) untuk panduan lengkap cara berkontribusi:
+
+- 🐛 **Bug Reports**: Laporkan bug yang Anda temukan
+- 💡 **Feature Requests**: Usulkan fitur baru yang bermanfaat  
+- 🔧 **Code Contributions**: Submit code improvements
+- 📚 **Documentation**: Bantu improve dokumentasi
+- 📋 **Course List Updates**: Update daftar mata kuliah terbaru
+
+**Quick Start untuk Kontributor:**
+1. Fork repository ini
+2. Buat branch untuk perubahan Anda
+3. Submit Pull Request dengan deskripsi yang jelas
 
 ## 📄 License
 
