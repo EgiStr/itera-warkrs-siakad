@@ -92,8 +92,6 @@ class Config:
                 "cf_clearance": os.getenv("CF_CLEARANCE", "GANTI_DENGAN_CLEARANCE_ANDA")
             },
             "target_courses": {
-                "SD25-41301": "37704",
-                "SD25-40004": "37705"
             },
             "settings": {
                 "delay_seconds": int(os.getenv("DELAY_SECONDS", "45")),

@@ -23,7 +23,8 @@ class WARKRSController:
     """
     
     def __init__(self, cookies: Dict[str, str], urls: Dict[str, str], 
-                 target_courses: Dict[str, str], settings: Dict, telegram_config: Dict = None):
+                 target_courses: Dict[str, str], settings: Dict, telegram_config: Dict = None,
+                 debug_mode: bool = False):
         """
         Initialize WAR KRS controller
         
@@ -33,9 +34,11 @@ class WARKRSController:
             target_courses: Target courses mapping (code -> class_id)
             settings: Configuration settings
             telegram_config: Telegram configuration (optional)
+            debug_mode: Enable debug mode for troubleshooting
         """
         self.target_courses = target_courses.copy()
         self.settings = settings
+        self.debug_mode = debug_mode
         self.start_time = datetime.now()
         self.successful_courses = []
         
@@ -70,9 +73,12 @@ class WARKRSController:
         print()
         
         # Show currently enrolled courses
-        enrolled = self.krs_service.get_enrolled_courses()
+        enrolled = self.krs_service.get_enrolled_courses(debug_mode=self.debug_mode)
         enrolled_str = ', '.join(sorted(enrolled)) if enrolled else 'Tidak ada'
         print(f"MK Terdaftar Saat Ini: {enrolled_str}")
+        
+        if self.debug_mode:
+            print("🔍 DEBUG MODE: HTML content saved to debug_enrolled_courses.html")
         
         # Show Telegram status
         if self.telegram and self.telegram.is_enabled():

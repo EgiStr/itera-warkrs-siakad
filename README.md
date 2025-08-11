@@ -275,14 +275,58 @@ python main.py --test-telegram
 python setup.py
 ```
 
+**5. "KRS table not found" atau "No courses found"**
+```bash
+# Run debug mode untuk analisis HTML
+python main.py --debug
+
+# Atau gunakan debug helper script
+./debug.sh
+
+# Manual debug test
+python debug_test.py
+```
+
+### Debug dan Troubleshooting
+
+**Debug Mode:**
+```bash
+# Enable debug mode (saves HTML content)
+python main.py --debug
+
+# Debug logging dengan file output
+python main.py --log-level DEBUG --log-file debug.log
+
+# Quick debug test
+python debug_test.py
+
+# Run debug helper script
+./debug.sh
+```
+
+**Debug Files yang Dihasilkan:**
+- `debug_enrolled_courses.html` - HTML content dari halaman KRS
+- `debug_full_analysis.html` - Analisis lengkap struktur halaman
+- `debug.log` - Log file dengan informasi detail
+
+**Jika Tidak Ada Mata Kuliah Ditemukan:**
+1. ✅ **Cek cookies**: Pastikan CI_SESSION dan CF_CLEARANCE masih valid
+2. ✅ **Cek login**: Login manual ke SIAKAD untuk verifikasi akses
+3. ✅ **Cek HTML structure**: Buka debug HTML files untuk melihat struktur
+4. ✅ **Update cookies**: Jika expired, ambil cookies baru dari browser
+5. ✅ **Check logs**: Lihat log files untuk error details
+
 ### Getting Debug Information
 
 ```bash
-# Run dengan debug logging
-python main.py --log-level DEBUG --log-file debug.log
-
 # Check configuration status
 python main.py --status
+
+# Test Telegram connection
+python main.py --test-telegram
+
+# Run dengan debug logging
+python main.py --log-level DEBUG --log-file debug.log
 ```
 
 ## 📝 Changelog

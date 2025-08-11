@@ -31,19 +31,44 @@ class KRSService:
         self.urls = urls
         self.parser = KRSParser()
     
-    def get_enrolled_courses(self) -> Set[str]:
+    def get_enrolled_courses(self, debug_mode: bool = False) -> Set[str]:
         """
         Get currently enrolled courses
         
+        Args:
+            debug_mode: If True, save HTML content for debugging
+            
         Returns:
             Set of enrolled course codes
         """
         try:
             response = self.session.get(self.urls['pilih_mk'])
-            return self.parser.parse_enrolled_courses(response.text)
+            
+            if debug_mode:
+                self.parser.debug_html_structure(response.text, "debug_enrolled_courses.html")
+                analysis = self.parser.analyze_page_structure(response.text)
+                logger.info(f"Page analysis: {analysis}")
+            
+            enrolled = self.parser.parse_enrolled_courses(response.text)
+            logger.info(f"Found {len(enrolled)} enrolled courses: {', '.join(sorted(enrolled)) if enrolled else 'None'}")
+            
+            return enrolled
         except Exception as e:
             logger.error(f"Failed to get enrolled courses: {e}")
             return set()
+    
+    def is_course_enrolled(self, course_code: str) -> bool:
+        """
+        Check if a specific course is already enrolled
+        
+        Args:
+            course_code: Course code to check
+            
+        Returns:
+            True if course is enrolled, False otherwise
+        """
+        enrolled_courses = self.get_enrolled_courses()
+        return course_code in enrolled_courses
     
     def register_course(self, class_id: str) -> bool:
         """

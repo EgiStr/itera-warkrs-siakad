@@ -71,6 +71,12 @@ def parse_arguments():
         help='Test Telegram notification connection'
     )
     
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Enable debug mode (saves HTML content for troubleshooting)'
+    )
+    
     return parser.parse_args()
 
 
@@ -208,7 +214,8 @@ def main():
             urls=config.urls,
             target_courses=config.target_courses,
             settings=config.settings,
-            telegram_config=config.telegram
+            telegram_config=config.telegram,
+            debug_mode=args.debug  # Pass debug mode to controller
         )
         
         controller.run()
