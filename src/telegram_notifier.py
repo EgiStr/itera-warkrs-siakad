@@ -5,9 +5,12 @@ Handles sending notifications via Telegram Bot API
 
 import asyncio
 import logging
+import requests
 from typing import Optional, List
 from datetime import datetime
 import os
+import threading
+import concurrent.futures
 
 try:
     from telegram import Bot
@@ -99,16 +102,92 @@ class TelegramNotifier:
             logger.debug("Telegram notifications disabled, skipping message")
             return False
         
-        try:
-            # Run async function in sync context
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(self._send_message_async(message, parse_mode))
-            loop.close()
-            return result
-        except Exception as e:
-            logger.error(f"Error in send_message: {e}")
+        # Use requests-based approach as fallback for asyncio issues
+        return self._send_message_requests(message, parse_mode)
+    
+    def _send_message_requests(self, message: str, parse_mode: str = "HTML") -> bool:
+        """
+        Send message using requests library (synchronous, no asyncio issues)
+        
+        Args:
+            message: Message to send
+            parse_mode: Telegram parse mode
+            
+        Returns:
+            True if message sent successfully, False otherwise
+        """
+        if not self.bot_token or not self.chat_id:
             return False
+            
+        try:
+            url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+            payload = {
+                'chat_id': self.chat_id,
+                'text': message,
+                'parse_mode': parse_mode
+            }
+            
+            response = requests.post(url, json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                logger.debug("Telegram message sent successfully")
+                return True
+            else:
+                logger.error(f"Failed to send Telegram message: HTTP {response.status_code} - {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error sending Telegram message: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending Telegram message: {e}")
+            return False
+    
+    def _send_message_async_safe(self, message: str, parse_mode: str = "HTML") -> bool:
+        """
+        Send message with safe asyncio handling (backup method)
+        
+        Args:
+            message: Message to send
+            parse_mode: Telegram parse mode
+            
+        Returns:
+            True if message sent successfully, False otherwise
+        """
+        try:
+            # Check if there's already an event loop running
+            try:
+                loop = asyncio.get_running_loop()
+                # If there's already a loop, we can't use run_until_complete
+                # So we'll run it in a thread
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        result = new_loop.run_until_complete(self._send_message_async(message, parse_mode))
+                        return result
+                    finally:
+                        new_loop.close()
+                
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(run_in_thread)
+                    return future.result(timeout=30)  # 30 second timeout
+                    
+            except RuntimeError:
+                # No event loop running, safe to create one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(self._send_message_async(message, parse_mode))
+                    return result
+                finally:
+                    loop.close()
+                    
+        except Exception as e:
+            logger.error(f"Failed to send Telegram message via async: {e}")
+            # Fallback to requests method
+            return self._send_message_requests(message, parse_mode)
     
     def notify_start(self, target_courses: List[str]) -> bool:
         """
@@ -232,12 +311,13 @@ class TelegramNotifier:
     
     def test_connection(self) -> bool:
         """
-        Test Telegram connection
+        Test Telegram connection with multiple methods
         
         Returns:
             True if connection test successful
         """
-        if not self.is_enabled():
+        if not self.bot_token or not self.chat_id:
+            logger.error("Telegram credentials not configured")
             return False
         
         message = f"""
@@ -248,4 +328,50 @@ class TelegramNotifier:
 ✅ Koneksi Telegram berhasil! WAR KRS siap mengirim notifikasi.
         """.strip()
         
-        return self.send_message(message)
+        # Try requests method first (most reliable)
+        logger.info("Testing Telegram connection using requests method...")
+        if self._send_message_requests(message):
+            logger.info("Telegram test successful using requests method")
+            return True
+        
+        # Fallback to async method if requests fails
+        if TELEGRAM_AVAILABLE and self.bot:
+            logger.info("Trying async method as fallback...")
+            try:
+                result = self._send_message_async_safe(message)
+                if result:
+                    logger.info("Telegram test successful using async method")
+                    return True
+            except Exception as e:
+                logger.error(f"Async method also failed: {e}")
+        
+        logger.error("All Telegram test methods failed")
+        return False
+    
+    def get_connection_status(self) -> dict:
+        """
+        Get detailed connection status for debugging
+        
+        Returns:
+            Dictionary with connection status details
+        """
+        status = {
+            'enabled': self.enabled,
+            'telegram_available': TELEGRAM_AVAILABLE,
+            'bot_token_configured': bool(self.bot_token),
+            'chat_id_configured': bool(self.chat_id),
+            'bot_initialized': self.bot is not None,
+            'last_test_result': None,
+            'api_endpoint': f"https://api.telegram.org/bot{self.bot_token[:10]}...{self.bot_token[-10:]}" if self.bot_token else None
+        }
+        
+        # Quick test
+        if self.is_enabled():
+            try:
+                test_message = "🔧 Connection status check"
+                status['last_test_result'] = self._send_message_requests(test_message)
+            except Exception as e:
+                status['last_test_result'] = False
+                status['last_error'] = str(e)
+        
+        return status

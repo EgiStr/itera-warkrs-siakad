@@ -163,16 +163,34 @@ def main():
                 chat_id=config.telegram['chat_id']
             )
             
+            # Get detailed status
+            status = notifier.get_connection_status()
+            print(f"📊 Connection Status:")
+            print(f"   - Library available: {'✅' if status['telegram_available'] else '❌'}")
+            print(f"   - Bot token configured: {'✅' if status['bot_token_configured'] else '❌'}")
+            print(f"   - Chat ID configured: {'✅' if status['chat_id_configured'] else '❌'}")
+            print(f"   - Service enabled: {'✅' if status['enabled'] else '❌'}")
+            print()
+            
             if notifier.test_connection():
                 print("✅ Telegram connection successful!")
                 print("   Bot dapat mengirim notifikasi ke chat yang ditentukan.")
+                print("   Notifikasi akan aktif selama proses WAR KRS.")
             else:
                 print("❌ Telegram connection failed!")
-                print("   Periksa bot token dan chat ID Anda.")
+                print("   Periksa:")
+                print("   - Bot token masih valid")
+                print("   - Chat ID benar")
+                print("   - Bot sudah di-start (/start di chat)")
+                print("   - Internet connection")
+                if 'last_error' in status:
+                    print(f"   - Error: {status['last_error']}")
             return 0
             
         except Exception as e:
             print(f"❌ Error testing Telegram: {e}")
+            import traceback
+            traceback.print_exc()
             return 1
     
     # Load configuration
