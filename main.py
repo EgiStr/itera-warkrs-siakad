@@ -216,15 +216,7 @@ def main():
     print()
     
     # Confirm execution
-    try:
-        confirm = input("🚀 Mulai WAR KRS automation? (y/N): ").strip().lower()
-        if confirm not in ['y', 'yes']:
-            print("❌ Dibatalkan oleh user.")
-            return 0
-    except KeyboardInterrupt:
-        print("\\n❌ Dibatalkan oleh user.")
-        return 0
-    
+    # Langsung eksekusi tanpa konfirmasi y/n
     # Initialize and run controller
     try:
         controller = WARKRSController(
