@@ -65,6 +65,12 @@ def parse_arguments():
         help='Show current configuration status'
     )
     
+    parser.add_argument(
+        '--test-telegram',
+        action='store_true',
+        help='Test Telegram notification connection'
+    )
+    
     return parser.parse_args()
 
 
@@ -118,6 +124,8 @@ def main():
             print(f"   Cookies configured: {'✅ Yes' if config.is_configured() else '❌ No'}")
             print(f"   Target courses: {len(config.target_courses)} mata kuliah")
             print(f"   Environment file: {'.env found' if Path('.env').exists() else '.env not found'}")
+            if config.telegram:
+                print(f"   Telegram configured: {'✅ Yes' if config.telegram.get('bot_token') and config.telegram.get('chat_id') else '❌ No'}")
             print()
             print("🎯 Target Courses:")
             for code, class_id in config.target_courses.items():
@@ -130,6 +138,35 @@ def main():
             return 0
         except Exception as e:
             print(f"❌ Error loading configuration: {e}")
+            return 1
+    
+    # Test Telegram connection if requested
+    if args.test_telegram:
+        try:
+            config = Config(args.config)
+            if not config.telegram or not config.telegram.get('bot_token') or not config.telegram.get('chat_id'):
+                print("❌ Telegram belum dikonfigurasi!")
+                print("   Silakan jalankan setup.py untuk mengatur Telegram.")
+                return 1
+            
+            print("🔍 Testing Telegram connection...")
+            from src.telegram_notifier import TelegramNotifier
+            
+            notifier = TelegramNotifier(
+                bot_token=config.telegram['bot_token'],
+                chat_id=config.telegram['chat_id']
+            )
+            
+            if notifier.test_connection():
+                print("✅ Telegram connection successful!")
+                print("   Bot dapat mengirim notifikasi ke chat yang ditentukan.")
+            else:
+                print("❌ Telegram connection failed!")
+                print("   Periksa bot token dan chat ID Anda.")
+            return 0
+            
+        except Exception as e:
+            print(f"❌ Error testing Telegram: {e}")
             return 1
     
     # Load configuration
@@ -170,7 +207,8 @@ def main():
             cookies=config.cookies,
             urls=config.urls,
             target_courses=config.target_courses,
-            settings=config.settings
+            settings=config.settings,
+            telegram_config=config.telegram
         )
         
         controller.run()

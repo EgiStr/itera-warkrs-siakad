@@ -1,278 +1,261 @@
-# WAR KRS SIAKAD ITERA 🎯
+# WAR KRS SIAKAD ITERA - Automation Tool
 
-**Automation tool untuk War KRS (Kartu Rencana Studi) di SIAKAD Institut Teknologi Sumatera**
+Aplikasi otomatis untuk melakukan pendaftaran mata kuliah (WAR KRS) di SIAKAD ITERA dengan notifikasi Telegram real-time.
 
 [![Python Version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## 🌟 Features
+## ✨ Features
 
-- ✅ **Otomatis Registration**: Mendaftarkan mata kuliah secara otomatis
-- 🔄 **Continuous Monitoring**: Bruteforce registration sampai berhasil
-- 🛡️ **Session Management**: Aman dengan cloudscraper anti-detection
-- ⚙️ **Configurable**: Konfigurasi mudah melalui JSON dan Environment Variables
-- � **Secure**: Environment variables untuk data sensitif (cookies)
-- �📊 **Real-time Status**: Monitor progress secara real-time
--  **Logging**: Comprehensive logging untuk debugging
-- 🎯 **Interactive Setup**: Setup wizard untuk konfigurasi mudah
+- ✅ **Automated Course Registration**: Otomatis mendaftarkan mata kuliah secara berulang sampai berhasil
+- ✅ **Anti-Detection**: Menggunakan cloudscraper untuk menghindari deteksi bot
+- ✅ **Session Management**: Mengelola session dan cookies secara aman
+- ✅ **Environment Variables**: Kredensial disimpan aman di file .env
+- ✅ **Telegram Notifications**: Notifikasi real-time ke Telegram saat:
+  - Proses dimulai
+  - Mata kuliah berhasil didaftarkan
+  - Semua proses selesai
+  - Terjadi error atau session expired
+- ✅ **Professional Architecture**: Mengikuti SOLID principles dengan clean code
+- ✅ **Comprehensive Logging**: Log detail untuk debugging dan monitoring
+- ✅ **Interactive Setup**: Setup wizard yang mudah digunakan
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Prerequisites
 
-- Python 3.7 atau lebih tinggi
-- Akun SIAKAD ITERA yang valid
-- Browser untuk mendapatkan cookies
+- Python 3.7+
+- Access ke SIAKAD ITERA
+- Telegram Bot (optional, untuk notifikasi)
 
-### Installation
+### 2. Installation
 
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/yourusername/war-krs-itera.git
-   cd war-krs-itera
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Setup konfigurasi**
-   ```bash
-   python main.py --setup
-   ```
-
-### Configuration
-
-1. **Setup Environment Variables (Recommended - Secure)**
-   ```bash
-   # Option 1: Use interactive setup wizard
-   python setup.py
-   
-   # Option 2: Manual setup
-   cp .env.example .env
-   # Edit .env file with your credentials
-   ```
-
-2. **Get Authentication Cookies**
-   - Login ke [SIAKAD ITERA](https://siakad.itera.ac.id)
-   - Tekan `F12` → `Application` → `Cookies` → `https://siakad.itera.ac.id`
-   - Copy nilai `ci_session` dan `cf_clearance`
-   - Paste ke file `.env`:
-     ```env
-     CI_SESSION=your_session_here
-     CF_CLEARANCE=your_clearance_here
-     ```
-
-3. **Configure Target Courses**
-   Edit `config/config.json`:
-   ```json
-   {
-     "target_courses": {
-       "SD25-41301": "37704",
-       "SD25-40004": "37705"
-     }
-   }
-   ```
-
-4. **Get Course IDs**
-   - Buka halaman [Pilih Mata Kuliah](https://siakad.itera.ac.id/mahasiswa/krsbaru/pilihmk)
-   - Inspect element dropdown mata kuliah
-   - Copy `value` dari `<option value="12345">KODE - NAMA MK</option>`
-
-## 🎮 Usage
-
-### Basic Usage
 ```bash
+# Clone atau download project
+cd warkrs
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Atau gunakan virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# atau
+.venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+```
+
+### 3. Setup Configuration
+
+```bash
+# Jalankan setup wizard
+python setup.py
+```
+
+Setup wizard akan memandu Anda untuk:
+1. **Cookie Setup**: Mengambil CI_SESSION dan CF_CLEARANCE dari browser
+2. **Target Courses**: Mengatur mata kuliah yang ingin didaftarkan
+3. **Settings**: Konfigurasi delay dan timeout
+4. **Telegram Setup**: Mengatur notifikasi Telegram (optional)
+
+### 4. Run the Application
+
+```bash
+# Check status konfigurasi
+python main.py --status
+
+# Test koneksi Telegram (jika dikonfigurasi)
+python main.py --test-telegram
+
+# Mulai automation
 python main.py
 ```
 
-### Interactive Setup (Recommended)
-```bash
-python setup.py
+## 📱 Telegram Notification Setup
+
+### Membuat Telegram Bot
+
+1. **Buka @BotFather di Telegram**
+2. **Kirim command `/newbot`**
+3. **Ikuti instruksi untuk membuat bot baru**
+4. **Simpan Bot Token yang diberikan**
+
+### Mendapatkan Chat ID
+
+1. **Start chat dengan bot Anda**
+2. **Kirim pesan apa saja ke bot**
+3. **Buka browser dan kunjungi:**
+   ```
+   https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
+   ```
+4. **Cari `"chat":{"id":123456789` dan ambil angka tersebut**
+
+### Konfigurasi di .env
+
+```env
+# Telegram Notifications
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
 ```
-The setup wizard will guide you through:
-- 🍪 Cookie configuration
-- 🎯 Target course setup  
-- ⚙️ Settings configuration
-- 🔒 Secure .env file creation
 
-### Advanced Options
+## 🛠️ Configuration
+
+### File Structure
+
+```
+warkrs/
+├── main.py              # Entry point aplikasi
+├── setup.py             # Setup wizard
+├── requirements.txt     # Dependencies
+├── .env                 # Environment variables (buat saat setup)
+├── config/
+│   ├── config.json     # Konfigurasi utama (buat saat setup)
+│   └── settings.py     # Configuration management
+└── src/
+    ├── controller.py   # Main business logic
+    ├── session.py      # HTTP session management
+    ├── krs_service.py  # KRS registration service
+    ├── parser.py       # HTML parsing utilities
+    ├── telegram_notifier.py # Telegram notifications
+    └── utils.py        # Utility functions
+```
+
+### Environment Variables (.env)
+
+```env
+# SIAKAD Authentication Cookies
+CI_SESSION=your_ci_session_cookie
+CF_CLEARANCE=your_cf_clearance_cookie
+
+# Telegram Notifications (optional)
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+
+# Optional: Override default settings
+# DELAY_SECONDS=45
+# REQUEST_TIMEOUT=20
+```
+
+### Configuration (config/config.json)
+
+```json
+{
+    "cookies": {
+        "ci_session": "ENV:CI_SESSION",
+        "cf_clearance": "ENV:CF_CLEARANCE"
+    },
+    "target_courses": {
+        "SD25-41301": "37813",
+        "SD25-40004": "37705"
+    },
+    "settings": {
+        "delay_seconds": 45,
+        "request_timeout": 20,
+        "verification_delay": 2,
+        "inter_request_delay": 2
+    },
+    "urls": {
+        "pilih_mk": "https://siakad.itera.ac.id/mahasiswa/krsbaru/pilihmk",
+        "simpan_krs": "https://siakad.itera.ac.id/mahasiswa/krsbaru/simpanKRS"
+    }
+}
+```
+
+## 🔧 Command Line Options
+
 ```bash
-# Interactive setup wizard
-python setup.py
+# Tampilkan help
+python main.py --help
 
-# Check configuration status
+# Cek status konfigurasi
 python main.py --status
 
-# Custom config file
-python main.py --config my_config.json
+# Test koneksi Telegram
+python main.py --test-telegram
 
-# Enable debug logging
+# Setup configuration
+python main.py --setup
+
+# Custom config file
+python main.py --config path/to/config.json
+
+# Custom log level
 python main.py --log-level DEBUG
 
 # Save logs to file
-python main.py --log-file logs/war_krs.log
-
-# Show setup guide
-python main.py --setup
+python main.py --log-file logs/warkrs.log
 ```
 
-## 📁 Project Structure
+## 🔒 Security Best Practices
 
-```
-war-krs-itera/
-├── main.py                 # Entry point aplikasi
-├── setup.py                # Interactive setup wizard
-├── requirements.txt        # Python dependencies
-├── README.md              # Dokumentasi
-├── .env.example           # Template environment variables
-├── .env                   # Environment variables (auto-ignored)
-├── config/
-│   ├── __init__.py
-│   ├── settings.py        # Configuration manager
-│   └── config.json        # Configuration file
-└── src/
-    ├── __init__.py
-    ├── controller.py      # Main controller (orchestrator)
-    ├── krs_service.py     # Core KRS business logic
-    ├── session.py         # Session management
-    ├── parser.py          # HTML parsing utilities
-    └── utils.py           # Utility functions
-```
-
-## 🏗️ Architecture
-
-Aplikasi ini mengikuti **SOLID Principles** dan **Clean Architecture**:
-
-- **Single Responsibility**: Setiap class memiliki satu tanggung jawab
-- **Open/Closed**: Mudah di-extend tanpa modifikasi
-- **Liskov Substitution**: Interface yang konsisten
-- **Interface Segregation**: Interface yang spesifik
-- **Dependency Inversion**: Bergantung pada abstraksi
-
-### Core Components
-
-1. **Controller** (`controller.py`): Orchestrates the entire WAR KRS process
-2. **KRSService** (`krs_service.py`): Handles KRS-specific business logic
-3. **SiakadSession** (`session.py`): Manages authentication and HTTP requests
-4. **KRSParser** (`parser.py`): Parses HTML content from SIAKAD
-5. **Config** (`settings.py`): Manages application configuration
-
-## ⚙️ Configuration Options
-
-| Setting | Environment Variable | Description | Default |
-|---------|---------------------|-------------|---------|
-| `cookies.ci_session` | `CI_SESSION` | Session cookie dari SIAKAD | Required |
-| `cookies.cf_clearance` | `CF_CLEARANCE` | Cloudflare clearance cookie | Required |
-| `delay_seconds` | `DELAY_SECONDS` | Jeda antar siklus (detik) | 45 |
-| `request_timeout` | `REQUEST_TIMEOUT` | Timeout HTTP request (detik) | 20 |
-| `verification_delay` | - | Jeda verifikasi (detik) | 2 |
-| `inter_request_delay` | - | Jeda antar request (detik) | 2 |
-
-### Environment Variables Priority
-1. **Environment variables** (highest priority)
-2. **JSON configuration** (config.json)
-3. **Default values** (lowest priority)
-
-## 🛡️ Security & Best Practices
-
-### Environment Variables
-- **Gunakan .env file** untuk data sensitif (cookies)
-- **Never commit .env** ke version control
-- **.env sudah ada di .gitignore** secara otomatis
-- **Copy dari .env.example** untuk setup awal
-
-### Production Setup
-```bash
-# Clone repository
-git clone https://github.com/yourusername/war-krs-itera.git
-cd war-krs-itera
-
-# Setup environment
-pip install -r requirements.txt
-cp .env.example .env
-
-# Edit .env dengan credentials Anda
-nano .env
-
-# Run aplikasi
-python main.py
-```
-
-### Security Guidelines
-- **Regular cookie refresh** untuk session yang aman
-- **Rate limiting** untuk mencegah IP blocking
-- **Proper error handling** untuk stabilitas
-- **Secure storage** credentials di environment variables
+1. **Never commit .env file** - File .env sudah ditambahkan ke .gitignore
+2. **Regenerate cookies periodically** - Session cookies expire overtime
+3. **Use strong Telegram bot tokens** - Keep bot token secret
+4. **Limit bot permissions** - Bot hanya perlu akses kirim pesan
+5. **Monitor bot usage** - Check bot activity via @BotFather
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **"Konfigurasi cookie belum diatur"**
-   - Pastikan `ci_session` dan `cf_clearance` sudah diisi
-   - Cookie harus dari session yang valid
-
-2. **"Session expired"**
-   - Login ulang dan update cookies
-   - Periksa apakah cookies masih valid
-
-3. **"Kuota penuh"**
-   - Normal behavior, aplikasi akan terus mencoba
-   - Sesuaikan `delay_seconds` jika perlu
-
-4. **"Connection timeout"**
-   - Periksa koneksi internet
-   - Tingkatkan `request_timeout`
-
-### Debug Mode
+**1. "ModuleNotFoundError"**
 ```bash
-python main.py --log-level DEBUG --log-file debug.log
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## 🤝 Contributing
+**2. "Session expired" / "Unauthorized"**
+```bash
+# Update cookies di .env file
+# Atau jalankan setup ulang
+python setup.py
+```
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+**3. "Telegram connection failed"**
+```bash
+# Test koneksi
+python main.py --test-telegram
 
-### Development Guidelines
+# Periksa BOT_TOKEN dan CHAT_ID di .env
+```
 
-- Follow **PEP 8** style guide
-- Add **type hints** untuk semua functions
-- Write **comprehensive docstrings**
-- Add **unit tests** untuk new features
-- Maintain **SOLID principles**
+**4. "Configuration not found"**
+```bash
+# Jalankan setup wizard
+python setup.py
+```
 
-## 📄 License
+### Getting Debug Information
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+# Run dengan debug logging
+python main.py --log-level DEBUG --log-file debug.log
+
+# Check configuration status
+python main.py --status
+```
+
+## 📝 Changelog
+
+### v1.0.0
+- ✅ Initial release with professional architecture
+- ✅ Environment variable security
+- ✅ Telegram notification integration
+- ✅ Interactive setup wizard
+- ✅ Comprehensive error handling
+- ✅ SOLID principles implementation
 
 ## ⚠️ Disclaimer
 
-- Tool ini dibuat untuk tujuan **edukasi** dan **otomatisasi personal**
-- Gunakan dengan **bijak** dan **bertanggung jawab**
-- **Tidak bertanggung jawab** atas penyalahgunaan
-- Pastikan mematuhi **Terms of Service** SIAKAD ITERA
+Tool ini dibuat untuk tujuan edukasi dan membantu mahasiswa ITERA dalam proses pendaftaran KRS. Gunakan dengan bijak dan ikuti kebijakan yang berlaku di Institut Teknologi Sumatera.
 
-## 📞 Support
+## 📄 License
 
-- 🐛 **Bug Reports**: [Issues](https://github.com/yourusername/war-krs-itera/issues)
-- 💡 **Feature Requests**: [Issues](https://github.com/yourusername/war-krs-itera/issues)
-- 📧 **Contact**: your.email@example.com
-
-## 🙏 Acknowledgments
-
-- Institut Teknologi Sumatera
-- Python Community
-- Contributors dan beta testers
+This project is for educational purposes. Please respect your institution's policies and terms of service.
 
 ---
 
-**⭐ Star repository ini jika bermanfaat!**
+**Happy Coding! 🚀**
 
-Made with ❤️ by Indonesian Students
+Jika ada pertanyaan atau butuh bantuan, silakan buka issue di repository ini.

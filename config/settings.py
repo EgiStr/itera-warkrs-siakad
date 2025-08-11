@@ -73,6 +73,15 @@ class Config:
         if os.getenv("REQUEST_TIMEOUT"):
             config["settings"]["request_timeout"] = int(os.getenv("REQUEST_TIMEOUT"))
         
+        # Add Telegram configuration
+        if "telegram" not in config:
+            config["telegram"] = {}
+        
+        if os.getenv("TELEGRAM_BOT_TOKEN"):
+            config["telegram"]["bot_token"] = os.getenv("TELEGRAM_BOT_TOKEN")
+        if os.getenv("TELEGRAM_CHAT_ID"):
+            config["telegram"]["chat_id"] = os.getenv("TELEGRAM_CHAT_ID")
+        
         return config
     
     def _get_default_config(self) -> Dict[str, Any]:
@@ -156,3 +165,8 @@ class Config:
     def settings(self) -> Dict[str, Any]:
         """Get general settings"""
         return self.get('settings', {})
+    
+    @property
+    def telegram(self) -> Dict[str, str]:
+        """Get Telegram configuration"""
+        return self.get('telegram', {})
