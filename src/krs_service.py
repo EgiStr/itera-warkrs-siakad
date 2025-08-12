@@ -130,7 +130,7 @@ class KRSService:
         if delay > 0:
             time.sleep(delay)
         
-        enrolled_courses = self.get_enrolled_courses()
+        enrolled_courses, session_status = self.get_enrolled_courses()
         return course_code in enrolled_courses
     
     def register_and_verify(self, course_code: str, class_id: str, 
@@ -155,9 +155,10 @@ class KRSService:
         # Verify registration
         return self.verify_registration(course_code, verification_delay)
     
-    def is_course_enrolled(self, course_code: str) -> bool:
+    def is_course_enrolled_old(self, course_code: str) -> bool:
         """
-        Check if a specific course is already enrolled
+        Legacy method - Check if a specific course is already enrolled
+        Note: Use the new is_course_enrolled method that returns session status
         
         Args:
             course_code: Course code to check
@@ -165,5 +166,5 @@ class KRSService:
         Returns:
             True if course is enrolled, False otherwise
         """
-        enrolled_courses = self.get_enrolled_courses()
+        enrolled_courses, session_status = self.get_enrolled_courses()
         return course_code in enrolled_courses

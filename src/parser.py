@@ -226,15 +226,6 @@ class KRSParser:
             # CRITICAL: Check for SIAKAD login page specific indicators
             login_signals = 0
             
-            # 1. Check for SIAKAD login page title pattern
-            if "siakad" in title_text and "institut teknologi sumatera" in title_text:
-                # Check if this is the public/login page (has news, no user content)
-                if ("berita kemahasiswaan" in page_text or 
-                    "berita ltpb" in page_text or
-                    "sistem informasi akademik" in page_text):
-                    login_signals += 5
-                    status['error_indicators'].append("Detected SIAKAD public/login page with news content")
-            
             # 2. Check for login navigation link presence
             login_nav_link = soup.find('a', href=lambda href: href and 'login/login' in href)
             if login_nav_link and 'login' in login_nav_link.get_text().lower():
@@ -256,22 +247,13 @@ class KRSParser:
                 if not has_course_table:
                     login_signals += 3
                     status['error_indicators'].append("No KRS or course data tables found")
+       
             
-            # 4. Check for absence of user-specific elements
-            user_indicators = [
-                'logout', 'keluar', 'profil', 'dashboard', 'mahasiswa',
-                'nama:', 'nim:', 'semester', 'ipk'
-            ]
-            
-            found_user_content = any(indicator in page_text for indicator in user_indicators)
-            if not found_user_content:
-                login_signals += 2
-                status['error_indicators'].append("No user-specific content found")
             
             # 5. Check for news/public content (indicates public page)
             public_content_indicators = [
                 'berita kemahasiswaan', 'berita ltpb', 'peraturan akademik',
-                'kalender akademik', 'copyright', 'upa tik'
+                'kalender akademik'
             ]
             
             public_content_count = sum(1 for indicator in public_content_indicators if indicator in page_text)
@@ -291,15 +273,6 @@ class KRSParser:
                 if soup.select(selector):
                     login_signals += 2
                     status['error_indicators'].append(f"Found login form element: {selector}")
-            
-            # 7. Check URL patterns
-            if response_url:
-                url_lower = response_url.lower()
-                if ('login' in url_lower or 
-                    url_lower.endswith('/') or 
-                    'siakad.itera.ac.id' == url_lower.replace('https://', '').replace('http://', '')):
-                    login_signals += 2
-                    status['error_indicators'].append("URL indicates login/public page")
             
             # 8. Check for session timeout patterns
             session_timeout_patterns = [
