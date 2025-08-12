@@ -31,33 +31,49 @@ class KRSService:
         self.urls = urls
         self.parser = KRSParser()
     
-    def get_enrolled_courses(self, debug_mode: bool = False) -> Set[str]:
+    def get_enrolled_courses(self, debug_mode: bool = False) -> tuple[Set[str], dict]:
         """
-        Get currently enrolled courses
+        Get currently enrolled courses with session validation
         
         Args:
             debug_mode: If True, save HTML content for debugging
             
         Returns:
-            Set of enrolled course codes
+            Tuple of (enrolled_courses_set, session_status_dict)
         """
         try:
             response = self.session.get(self.urls['pilih_mk'])
+            
+            # Check session status first
+            session_status = self.parser.detect_session_status(response.text, response.url)
             
             if debug_mode:
                 self.parser.debug_html_structure(response.text, "debug_enrolled_courses.html")
                 analysis = self.parser.analyze_page_structure(response.text)
                 logger.info(f"Page analysis: {analysis}")
+                logger.info(f"Session status: {session_status}")
+            
+            # If session is invalid, return empty set but preserve status info
+            if not session_status['session_valid']:
+                logger.warning(f"Session validation failed: {session_status['error_indicators']}")
+                return set(), session_status
             
             enrolled = self.parser.parse_enrolled_courses(response.text)
             logger.info(f"Found {len(enrolled)} enrolled courses: {', '.join(sorted(enrolled)) if enrolled else 'None'}")
             
-            return enrolled
+            return enrolled, session_status
         except Exception as e:
             logger.error(f"Failed to get enrolled courses: {e}")
-            return set()
+            return set(), {
+                'is_logged_in': False,
+                'session_valid': False, 
+                'needs_login': True,
+                'error_indicators': [f"Network error: {e}"],
+                'confidence_score': 100,
+                'recommended_action': 'stop_and_reauth'
+            }
     
-    def is_course_enrolled(self, course_code: str) -> bool:
+    def is_course_enrolled(self, course_code: str) -> tuple[bool, dict]:
         """
         Check if a specific course is already enrolled
         
@@ -65,10 +81,10 @@ class KRSService:
             course_code: Course code to check
             
         Returns:
-            True if course is enrolled, False otherwise
+            Tuple of (is_enrolled, session_status)
         """
-        enrolled_courses = self.get_enrolled_courses()
-        return course_code in enrolled_courses
+        enrolled_courses, session_status = self.get_enrolled_courses()
+        return course_code in enrolled_courses, session_status
     
     def register_course(self, class_id: str) -> bool:
         """

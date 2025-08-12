@@ -236,6 +236,141 @@ class TelegramNotifier:
         
         return self.send_message(message)
     
+    def notify_cycle_summary(self, cycle_number: int, attempted_courses: List[str], 
+                           successful_courses: List[str], failed_courses: List[str],
+                           elapsed_time: str, next_attempt_in: int = None) -> bool:
+        """
+        Send cycle summary notification
+        
+        Args:
+            cycle_number: Current cycle number
+            attempted_courses: Courses attempted in this cycle
+            successful_courses: Courses successfully registered in this cycle
+            failed_courses: Courses that failed in this cycle
+            elapsed_time: Total elapsed time
+            next_attempt_in: Seconds until next attempt
+            
+        Returns:
+            True if notification sent successfully
+        """
+        if not attempted_courses:
+            return False  # Don't send empty cycle notifications
+            
+        # Build status summary
+        status_lines = []
+        if successful_courses:
+            success_list = "\n".join([f"✅ <code>{code}</code>" for code in successful_courses])
+            status_lines.append(f"<b>Berhasil:</b>\n{success_list}")
+        
+        if failed_courses:
+            failed_list = "\n".join([f"❌ <code>{code}</code>" for code in failed_courses])
+            status_lines.append(f"<b>Gagal:</b>\n{failed_list}")
+        
+        status_text = "\n\n".join(status_lines) if status_lines else "Tidak ada perubahan"
+        
+        next_text = f"\n⏰ <b>Percobaan berikutnya:</b> {next_attempt_in} detik" if next_attempt_in else ""
+        
+        message = f"""
+🔄 <b>CYCLE #{cycle_number} SUMMARY</b>
+
+⏱️ <b>Total Waktu:</b> {elapsed_time}
+🎯 <b>Dicoba:</b> {len(attempted_courses)} mata kuliah
+
+{status_text}{next_text}
+
+💡 Sistem tetap berjalan dan memantau...
+        """.strip()
+        
+        return self.send_message(message)
+    
+    def notify_session_warning(self, session_status: dict, cycle_number: int = None) -> bool:
+        """
+        Notify about session/authentication issues
+        
+        Args:
+            session_status: Session status dictionary from parser
+            cycle_number: Optional current cycle number
+            
+        Returns:
+            True if notification sent successfully
+        """
+        confidence = session_status.get('confidence_score', 0)
+        action = session_status.get('recommended_action', 'unknown')
+        errors = session_status.get('error_indicators', [])
+        
+        cycle_text = f" (Cycle #{cycle_number})" if cycle_number else ""
+        
+        if action == 'stop_and_reauth':
+            icon = "🚨"
+            title = "CRITICAL: SESSION EXPIRED"
+            action_text = """
+🔧 <b>ACTION REQUIRED:</b>
+1. Login ulang ke SIAKAD ITERA
+2. Update cookies di file .env
+3. Restart aplikasi WAR KRS
+
+⚠️ Program akan berhenti untuk menghindari error."""
+        elif action == 'warn_and_continue':
+            icon = "⚠️"
+            title = "WARNING: Possible Session Issues"
+            action_text = """
+💡 <b>RECOMMENDED:</b>
+- Monitor aplikasi closely
+- Siapkan cookies baru jika diperlukan
+- Program akan continue tapi waspada"""
+        else:
+            icon = "🔍"
+            title = "Session Monitoring Alert"
+            action_text = "Program akan continue dengan monitoring ketat"
+        
+        error_list = "\n".join([f"• {error}" for error in errors[:5]])  # Limit to 5 errors
+        
+        message = f"""
+{icon} <b>{title}</b>{cycle_text}
+
+🔒 <b>Confidence:</b> {confidence}%
+📅 <b>Waktu:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+🐛 <b>Indicators:</b>
+{error_list}
+
+{action_text}
+        """.strip()
+        
+        return self.send_message(message)
+    
+    def notify_heartbeat(self, cycles_completed: int, total_time: str, 
+                        remaining_courses: List[str], last_activity: str = None) -> bool:
+        """
+        Send heartbeat notification to show system is still running
+        
+        Args:
+            cycles_completed: Number of cycles completed
+            total_time: Total elapsed time
+            remaining_courses: Courses still being attempted
+            last_activity: Last significant activity
+            
+        Returns:
+            True if notification sent successfully
+        """
+        remaining_list = "\n".join([f"🎯 <code>{code}</code>" for code in remaining_courses])
+        activity_text = f"\n📝 <b>Last Activity:</b> {last_activity}" if last_activity else ""
+        
+        message = f"""
+💓 <b>HEARTBEAT - System Running</b>
+
+⏱️ <b>Runtime:</b> {total_time}
+🔄 <b>Cycles:</b> {cycles_completed}
+📅 <b>Waktu:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+🎯 <b>Still Targeting:</b>
+{remaining_list}{activity_text}
+
+✅ System healthy and continuing...
+        """.strip()
+        
+        return self.send_message(message)
+    
     def notify_all_completed(self, successful_courses: List[str], total_time: str = None) -> bool:
         """
         Notify that all target courses have been completed

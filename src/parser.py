@@ -29,6 +29,12 @@ class KRSParser:
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
             
+            # First, check if this is a login page
+            session_status = KRSParser.detect_session_status(html_content)
+            if not session_status['session_valid']:
+                logger.warning(f"Detected login/public page. Session status: {session_status['error_indicators']}")
+                return enrolled_codes  # Return empty set for login page
+            
             # Method 1: Find the KRS table by its unique ID 'tabelkrs'
             krs_table = soup.find('table', id='tabelkrs')
             
@@ -42,7 +48,7 @@ class KRSParser:
                 for table in all_tables:
                     # Check if table contains KRS-related content
                     table_text = table.get_text().lower()
-                    if any(indicator in table_text for indicator in ['kode', 'mata kuliah', 'sks', 'kelas']):
+                    if any(indicator in table_text for indicator in ['kode mata kuliah', 'mata kuliah', 'sks', 'kelas', 'semester']):
                         krs_table = table
                         logger.info("Found potential KRS table using alternative method")
                         break
@@ -188,6 +194,169 @@ class KRSParser:
             logger.error(f"Failed to extract alert message: {e}")
         
         return ""
+
+    @staticmethod
+    def detect_session_status(html_content: str, response_url: str = None) -> dict:
+        """
+        Enhanced session status detection for SIAKAD ITERA
+        
+        Args:
+            html_content: HTML content to analyze
+            response_url: URL of the response (to detect redirects)
+            
+        Returns:
+            Dictionary with session status information
+        """
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            status = {
+                'is_logged_in': True,
+                'session_valid': True,
+                'needs_login': False,
+                'error_indicators': [],
+                'confidence_score': 0,
+                'recommended_action': 'continue'
+            }
+            
+            page_text = soup.get_text().lower()
+            title_text = soup.find('title')
+            title_text = title_text.text.lower() if title_text else ""
+            
+            # CRITICAL: Check for SIAKAD login page specific indicators
+            login_signals = 0
+            
+            # 1. Check for SIAKAD login page title pattern
+            if "siakad" in title_text and "institut teknologi sumatera" in title_text:
+                # Check if this is the public/login page (has news, no user content)
+                if ("berita kemahasiswaan" in page_text or 
+                    "berita ltpb" in page_text or
+                    "sistem informasi akademik" in page_text):
+                    login_signals += 5
+                    status['error_indicators'].append("Detected SIAKAD public/login page with news content")
+            
+            # 2. Check for login navigation link presence
+            login_nav_link = soup.find('a', href=lambda href: href and 'login/login' in href)
+            if login_nav_link and 'login' in login_nav_link.get_text().lower():
+                login_signals += 4
+                status['error_indicators'].append("Found login navigation link - indicates public page")
+            
+            # 3. Check for absence of KRS table (most critical)
+            krs_table = soup.find('table', id='tabelkrs')
+            if not krs_table:
+                # Also check for any table that might contain course data
+                has_course_table = False
+                all_tables = soup.find_all('table')
+                for table in all_tables:
+                    table_text = table.get_text().lower()
+                    if any(indicator in table_text for indicator in ['kode mata kuliah', 'sks', 'semester', 'kelas']):
+                        has_course_table = True
+                        break
+                
+                if not has_course_table:
+                    login_signals += 3
+                    status['error_indicators'].append("No KRS or course data tables found")
+            
+            # 4. Check for absence of user-specific elements
+            user_indicators = [
+                'logout', 'keluar', 'profil', 'dashboard', 'mahasiswa',
+                'nama:', 'nim:', 'semester', 'ipk'
+            ]
+            
+            found_user_content = any(indicator in page_text for indicator in user_indicators)
+            if not found_user_content:
+                login_signals += 2
+                status['error_indicators'].append("No user-specific content found")
+            
+            # 5. Check for news/public content (indicates public page)
+            public_content_indicators = [
+                'berita kemahasiswaan', 'berita ltpb', 'peraturan akademik',
+                'kalender akademik', 'copyright', 'upa tik'
+            ]
+            
+            public_content_count = sum(1 for indicator in public_content_indicators if indicator in page_text)
+            if public_content_count >= 3:
+                login_signals += 3
+                status['error_indicators'].append(f"Found {public_content_count} public content indicators")
+            
+            # 6. Check for specific login form elements
+            login_form_elements = [
+                'input[name="username"]',
+                'input[name="password"]',
+                'input[type="password"]',
+                'form[action*="login"]'
+            ]
+            
+            for selector in login_form_elements:
+                if soup.select(selector):
+                    login_signals += 2
+                    status['error_indicators'].append(f"Found login form element: {selector}")
+            
+            # 7. Check URL patterns
+            if response_url:
+                url_lower = response_url.lower()
+                if ('login' in url_lower or 
+                    url_lower.endswith('/') or 
+                    'siakad.itera.ac.id' == url_lower.replace('https://', '').replace('http://', '')):
+                    login_signals += 2
+                    status['error_indicators'].append("URL indicates login/public page")
+            
+            # 8. Check for session timeout patterns
+            session_timeout_patterns = [
+                'session expired', 'sesi berakhir', 'timeout', 'login ulang',
+                'akses ditolak', 'unauthorized', 'access denied', 'silakan login'
+            ]
+            
+            for pattern in session_timeout_patterns:
+                if pattern in page_text:
+                    login_signals += 4
+                    status['error_indicators'].append(f"Session timeout indicator: {pattern}")
+            
+            # 9. Check for absence of navigation that should be present when logged in
+            logged_in_nav = [
+                'krs', 'transkrip', 'jadwal', 'nilai', 'pembayaran', 'academic'
+            ]
+            
+            nav_found = any(nav in page_text for nav in logged_in_nav)
+            if not nav_found:
+                login_signals += 1
+                status['error_indicators'].append("No logged-in navigation elements found")
+            
+            # Calculate final status based on login signals
+            if login_signals >= 8:
+                status['is_logged_in'] = False
+                status['session_valid'] = False
+                status['needs_login'] = True
+                status['confidence_score'] = min(100, login_signals * 8)
+                status['recommended_action'] = 'stop_and_reauth'
+            elif login_signals >= 5:
+                status['is_logged_in'] = False
+                status['session_valid'] = False
+                status['needs_login'] = True
+                status['confidence_score'] = min(95, login_signals * 12)
+                status['recommended_action'] = 'warn_and_continue'
+            elif login_signals >= 3:
+                status['confidence_score'] = login_signals * 15
+                status['recommended_action'] = 'monitor_closely'
+                status['error_indicators'].append("Moderate session risk detected")
+            elif login_signals >= 1:
+                status['confidence_score'] = login_signals * 10
+                status['recommended_action'] = 'continue'
+                status['error_indicators'].append("Minor session indicators detected")
+            
+            logger.info(f"Session detection: {login_signals} login signals, confidence: {status['confidence_score']}%")
+            return status
+            
+        except Exception as e:
+            logger.error(f"Failed to detect session status: {e}")
+            return {
+                'is_logged_in': True,
+                'session_valid': True,
+                'needs_login': False,
+                'error_indicators': [f"Detection error: {e}"],
+                'confidence_score': 0,
+                'recommended_action': 'continue'
+            }
 
     @staticmethod
     def debug_html_structure(html_content: str, output_file: str = "debug_krs_page.html") -> None:
