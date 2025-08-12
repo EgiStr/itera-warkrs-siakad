@@ -245,7 +245,7 @@ class KRSParser:
                         break
                 
                 if not has_course_table:
-                    login_signals += 3
+                    login_signals += 10
                     status['error_indicators'].append("No KRS or course data tables found")
        
             
